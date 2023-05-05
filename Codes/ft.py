@@ -1,0 +1,191 @@
+#!/usr/bin/env python
+
+import numpy as np
+np.random.seed(1337)
+
+import sys
+# sys.path.append('../../Neural/Lib/')
+sys.dont_write_bytecode = True
+import configparser as ConfigParser, os
+from sklearn.metrics import f1_score
+from sklearn.metrics import precision_score
+from sklearn.metrics import recall_score
+from sklearn.model_selection import train_test_split
+import keras as k
+from keras.utils.np_utils import to_categorical
+from tensorflow.keras.optimizers import RMSprop,Adam
+#from keras.preprocessing.sequence import pad_sequences
+from keras.utils import pad_sequences #Team 45: updated
+from keras.models import Sequential
+from keras.layers.core import Dense, Activation
+from keras.layers import GlobalAveragePooling1D
+#from keras.layers.embeddings import Embedding
+from keras.layers import Embedding #Team 45: updated
+from keras.models import load_model
+import dataset
+#, word2vec
+import gensim
+from gensim.models import Word2Vec
+import pickle
+
+# ignore sklearn warnings
+def warn(*args, **kwargs):
+  pass
+import warnings
+warnings.warn = warn
+
+RESULTS_FILE = 'Model/results.txt'
+MODEL_FILE = 'Model/model.h5'
+W2V_MODEL = 'Model/w2v.h5'
+
+def print_config(cfg):
+  """Print configuration settings"""
+
+  print ('train:', cfg.get('data', 'train'))
+  if cfg.has_option('data', 'embed'):
+    print ('embeddings:', cfg.get('data', 'embed'))
+    print ('test_size', cfg.getfloat('args', 'test_size'))
+    print ('batch:', cfg.get('dan', 'batch'))
+    print ('epochs:', cfg.get('dan', 'epochs'))
+    print ('embdims:', cfg.get('dan', 'embdims'))
+    print ('hidden:', cfg.get('dan', 'hidden'))
+    print ('learnrt:', cfg.get('dan', 'learnrt'))
+
+def get_model(cfg, init_vectors, num_of_features):
+  """Model definition"""
+
+  model = Sequential()
+  model.add(Embedding(input_dim=num_of_features,
+                      output_dim=cfg.getint('dan', 'embdims'),
+                      input_length=maxlen,
+                      trainable=True,
+                      weights=[init_vectors],
+                      name='EL'))
+  model.add(GlobalAveragePooling1D(name='AL'))
+
+  model.add(Dense(cfg.getint('dan', 'hidden'), name='HL'))
+  model.add(Activation('relu'))
+
+  model.add(Dense(classes))
+  model.add(Activation('sigmoid'))
+
+  return model
+
+if __name__ == "__main__":
+
+  cfg = ConfigParser.ConfigParser()
+  #cfg.read(sys.argv[1])
+  #base = os.environ['DATA_ROOT']
+  base = os.path.dirname(sys.path[0])
+  base_conf = sys.path[0]  
+  if len(sys.argv) > 1:
+    cfg_file = str(os.path.join(base_conf, sys.argv[1]))
+  else:
+    cfg_file = os.path.dirname(sys.path[0]) + '/Codes/sparse.cfg'
+  cfg.read(cfg_file)
+
+  #base = os.environ['DATA_ROOT']
+  train_dir = os.path.join(base_conf, cfg.get('data', 'train'))
+  code_file = os.path.join(base_conf, cfg.get('data', 'codes'))
+
+  dataset = dataset.DatasetProvider(
+    train_dir,
+    code_file,
+    cfg.getint('args', 'min_token_freq'),
+    cfg.getint('args', 'max_tokens_in_file'),
+    cfg.getint('args', 'min_examples_per_code'))
+  x, y = dataset.load()
+  #print (x, y)
+  train_x, test_x, train_y, test_y = train_test_split(
+    x,
+    y,
+    test_size=cfg.getfloat('args', 'test_size'))
+  maxlen = max([len(seq) for seq in train_x])
+
+  init_vectors = None
+  if cfg.has_option('data', 'embed'):
+    init_vectors = np.zeros ((len(dataset.token2int), cfg.getint('dan', 'embdims')))
+    embed_file = os.path.join(base_conf, cfg.get('data', 'embed'))
+
+    # with open (embed_file) as f:
+    #   corpus = []
+    #   note = f.read().split("\n")
+    #   for row in note:
+    #     corpus.append (row.split())
+    corpusfile = "../Data/Word2VecModels/mimic-cuis.data"
+    with open(corpusfile, 'rb') as ffile:
+      corpus = pickle.load(ffile)
+    w2v = Word2Vec(corpus, min_count=1, vector_size=300, window=5)
+    w2v.save(W2V_MODEL)
+    # w2v = Word2Vec.load(W2V_MODEL)
+    for cui, i in dataset.token2int.items():
+      if i > 0:
+        emb_vec = w2v.wv[cui]
+        if emb_vec is not None:
+          init_vectors[i] = w2v.wv[cui]
+    # init_vecors = [init_vectors]
+    print(init_vectors)
+
+  # turn x into numpy array among other things
+  classes = len(dataset.code2int)
+  train_x = pad_sequences(train_x, maxlen=maxlen)
+  test_x = pad_sequences(test_x, maxlen=maxlen)
+  train_y = np.array(train_y)
+  test_y = np.array(test_y)
+
+  print ('train_x shape:', train_x.shape)
+  print ('train_y shape:', train_y.shape)
+  print ('test_x shape:', test_x.shape)
+  print ('test_y shape:', test_y.shape)
+  print ('number of features:', len(dataset.token2int))
+  print ('number of labels:', len(dataset.code2int))
+
+  model = get_model(cfg, init_vectors, len(dataset.token2int))
+  #optimizer = RMSprop(lr=cfg.getfloat('dan', 'learnrt'))
+  optimizer = Adam(learning_rate=cfg.getfloat('dan', 'learnrt'))
+  
+  #############Team 45##########
+  # If using torch
+  #import torch
+  #optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+  #optimizer = torch.optim.Adam(naive_rnn.parameters(),lr=0.001)
+  #nn.CrossEntropyLoss()
+  #criterion = nn.BCELoss()
+  #criterion = nn.BCELoss(reduction='none') 
+  #################
+  
+  model.compile(loss='BinaryFocalCrossentropy',#'binary_crossentropy',
+                optimizer=optimizer,
+                metrics=['accuracy'])
+  model.fit(train_x,
+            train_y,
+            epochs=10,#cfg.getint('dan', 'epochs'),
+            batch_size=cfg.getint('dan', 'batch'),
+            validation_split=0.0)
+
+  model.save(MODEL_FILE)
+
+  # do we need to evaluate?
+  # if cfg.getfloat('args', 'test_size') == 0:
+    # exit()
+
+  # probability for each class; (test size, num of classes)
+  distribution = model.predict(test_x, batch_size=cfg.getint('dan', 'batch'))
+  #print (distribution)
+  # turn into an indicator matrix
+  distribution[distribution < 0.5] = 0
+  distribution[distribution >= 0.5] = 1
+
+  f1 = f1_score(test_y, distribution, average='macro')
+  precision = precision_score(test_y, distribution, average='macro')
+  recall = recall_score(test_y, distribution, average='macro')
+  print ('macro average p =', precision)
+  print ('macro average r =', recall)
+  print ('macro average f1 =', f1)
+
+  outf1 = open(RESULTS_FILE, 'w')
+  int2code = dict((value, key) for key, value in dataset.code2int.items())
+  f1_scores = f1_score(test_y, distribution, average=None)
+  outf1.write("%s|%s\n" % ('macro', f1))
+  for index, f1 in enumerate(f1_scores):
+    outf1.write("%s|%s\n" % (int2code[index], f1))
