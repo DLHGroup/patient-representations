@@ -1,0 +1,362 @@
+import numpy
+numpy.random.seed(0)
+
+import sys
+import time
+sys.dont_write_bytecode = True
+#sys.path.append('/content/drive/MyDrive/DLH_Final_Project/test1/Comorbidity/')
+import configparser, os, pickle
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import TfidfTransformer
+from sklearn.svm import LinearSVC
+from sklearn.model_selection import cross_val_score
+from sklearn.metrics import precision_score
+from sklearn.metrics import recall_score
+from sklearn.metrics import f1_score
+from sklearn.decomposition import TruncatedSVD
+#from keras.preprocessing.sequence import pad_sequences
+from keras.utils import pad_sequences #Team45: fixed 
+from keras.models import load_model
+from keras.models import Model
+import dataset
+from dataset import DatasetProvider
+import i2b2
+import pandas as pd
+
+# ignore sklearn warnings
+def warn(*args, **kwargs):
+  pass
+import warnings
+warnings.warn = warn
+
+FEATURE_LIST = 'Model/features.txt'
+NGRAM_RANGE = (1, 1) # use unigrams for cuis
+MIN_DF = 0
+
+def run_evaluation_sparse(disease, judgement, use_svd=False):
+  """Train on train set and evaluate on test set"""
+
+  print('Inside svm.py from Sparse')
+  print ('disease:', disease)
+  print ('judgement:', judgement)
+
+  cfg = configparser.ConfigParser()
+  #base = os.path.dirname(sys.path[0])
+  base = os.path.dirname(sys.path[0])
+  #print(base)
+  base_conf = sys.path[0]
+  #print(base_conf)
+  
+  #If no config file passed, use sparce.cfg by default
+  if len(sys.argv) > 1:
+    cfg_file = str(os.path.join(base_conf, sys.argv[1]))
+  else:
+    cfg_file = os.path.dirname(sys.path[0]) + '/Comorbidity/sparse.cfg'
+  cfg.read(cfg_file)
+  
+  train_data = os.path.join(base, cfg.get('data', 'train_data'))
+  #train_data = '/content/drive/MyDrive/DLH_Final_Project/test1/Comorbidity/Cuis/Train1+2/'
+  train_annot = os.path.join(base, cfg.get('data', 'train_annot'))  
+  test_data = os.path.join(base, cfg.get('data', 'test_data'))
+  #test_data = '/content/drive/MyDrive/DLH_Final_Project/test1/Comorbidity/Cuis/Test/'
+  test_annot = os.path.join(base, cfg.get('data', 'test_annot'))     
+
+  # handle training data first
+  train_data_provider = DatasetProvider(
+    train_data,
+    train_annot,
+    disease,
+    judgement,
+    use_pickled_alphabet=False,
+    alphabet_pickle=os.path.join(base, cfg.get('data', 'alphabet_pickle')))
+  print('training sparse svm')
+  x_train, y_train = train_data_provider.load_raw()
+  #print(x_train)
+  #print(y_train)
+  print ('train examples:', len(x_train))
+  print ('number of columns in X: ', len(x_train[0]))
+
+  vectorizer = CountVectorizer(
+    ngram_range=NGRAM_RANGE,
+    stop_words='english',
+    min_df=MIN_DF,
+    vocabulary=None,
+    binary=False)
+  train_count_matrix = vectorizer.fit_transform(x_train)
+  
+  tf = TfidfTransformer()
+  train_tfidf_matrix = tf.fit_transform(train_count_matrix)
+  print("Shape of train_tfidf_matrix is: "+ str(train_tfidf_matrix.shape))
+
+  # now handle the test set
+  test_data_provider = DatasetProvider(
+    test_data,
+    test_annot,
+    disease,
+    judgement,
+    use_pickled_alphabet=True, 
+    alphabet_pickle=os.path.join(base, cfg.get('data', 'alphabet_pickle'))
+    )
+  print('testing sparse svm')
+  x_test, y_test = test_data_provider.load_raw()
+  #print(x_test)
+  #print(y_test)
+  print ('test examples:', len(x_test))
+  print ('number of columns in X: ', len(x_test[0]))
+
+  test_count_matrix = vectorizer.transform(x_test)
+  test_tfidf_matrix = tf.transform(test_count_matrix)
+  print("Shape of test_tfidf_matrix is: "+ str(test_tfidf_matrix.shape))
+    
+  # print('train_tfidf_matrix',train_tfidf_matrix)
+  # print('test_tfidf_matrix',test_tfidf_matrix)
+  #SVM classifier
+  classifier = LinearSVC(class_weight='balanced')
+  classifier.fit(train_tfidf_matrix, y_train)
+  predictions = classifier.predict(test_tfidf_matrix)
+
+  p = precision_score(y_test, predictions, average='macro')
+  r = recall_score(y_test, predictions, average='macro')
+  f1 = f1_score(y_test, predictions, average='macro')
+  print ('unique labels in train:', len(set(y_train)))
+  print ('p = %.3f' % p)
+  print ('r = %.3f' % r)
+  print ('f1 = %.3f\n' % f1)
+
+  return p, r, f1
+
+def run_evaluation_svd(disease, judgement):
+  """Train on train set and evaluate on test set"""
+
+  print ('disease:', disease)
+  print ('judgement:', judgement)
+
+  cfg = configparser.ConfigParser()
+  #print(cfg)
+  base = os.path.dirname(sys.path[0])
+  #print(base)
+  base_conf = sys.path[0]
+  #print(base_conf)
+  
+  #If no config file passed, use sparce.cfg by default
+  if len(sys.argv) > 1:
+    cfg_file = str(os.path.join(base_conf, sys.argv[1]))
+  else:
+    cfg_file = os.path.dirname(sys.path[0]) + '/Comorbidity/sparse.cfg'
+  cfg.read(cfg_file)
+  
+  train_data = os.path.join(base, cfg.get('data', 'train_data'))
+  train_annot = os.path.join(base, cfg.get('data', 'train_annot'))
+  test_data = os.path.join(base, cfg.get('data', 'test_data'))
+  test_annot = os.path.join(base, cfg.get('data', 'test_annot'))  
+  print('paths initilized')
+  
+  # handle training data first
+  train_data_provider = DatasetProvider(
+    train_data,
+    train_annot,
+    disease,
+    judgement,
+    use_pickled_alphabet=False, 
+    alphabet_pickle=os.path.join(base, cfg.get('data', 'alphabet_pickle')))
+    
+  x_train, y_train = train_data_provider.load_raw()
+  print ('train examples:', len(x_train))
+
+  vectorizer = CountVectorizer(
+    ngram_range=NGRAM_RANGE,
+    stop_words='english',
+    min_df=MIN_DF,
+    vocabulary=None,
+    binary=False)
+  train_count_matrix = vectorizer.fit_transform(x_train)
+
+  #TF-IDF matrix used for SVD
+  tf = TfidfTransformer()
+  train_tfidf_matrix = tf.fit_transform(train_count_matrix)
+
+  # now handle the test set
+  test_data_provider = DatasetProvider(
+    test_data,
+    test_annot,
+    disease,
+    judgement,
+    use_pickled_alphabet=True,
+    alphabet_pickle=os.path.join(base, cfg.get('data', 'alphabet_pickle')))    
+  x_test, y_test = test_data_provider.load_raw()
+  print ('test examples:', len(x_test))
+  test_count_matrix = vectorizer.transform(x_test)
+  test_tfidf_matrix = tf.transform(test_count_matrix)
+  
+  #SVD dimensionality reduction
+  print('Hi from dimensionality reduction')
+  svd = TruncatedSVD(n_components=700) #Team 45: originally 1000
+  train_tfidf_matrix = svd.fit_transform(train_tfidf_matrix)
+  test_tfidf_matrix = svd.transform(test_tfidf_matrix)
+
+  #SVM classifier
+  classifier = LinearSVC(class_weight='balanced')
+  classifier.fit(train_tfidf_matrix, y_train)
+  predictions = classifier.predict(test_tfidf_matrix)
+
+  p = precision_score(y_test, predictions, average='macro')
+  r = recall_score(y_test, predictions, average='macro')
+  f1 = f1_score(y_test, predictions, average='macro')
+  print ('unique labels in train:', len(set(y_train)))
+  print ('p = %.3f' % p)
+  print ('r = %.3f' % r)
+  print ('f1 = %.3f\n' % f1)
+
+  print ('%.3f & %.3f & %.3f\n' % (p, r, f1))
+
+  return p, r, f1
+
+def run_evaluation_dense(disease, judgement):
+  """Use pre-trained patient representations"""
+
+  print ('disease:', disease)
+  print ('judgement:', judgement)
+
+  cfg = configparser.ConfigParser()
+  base = os.path.dirname(sys.path[0])
+  base_conf = sys.path[0]
+  
+  cfg_file = str(os.path.join(base_conf, sys.argv[1]))
+  cfg.read(cfg_file)
+  
+  train_data = os.path.join(base, cfg.get('data', 'train_data'))
+  train_annot = os.path.join(base, cfg.get('data', 'train_annot'))
+  test_data = os.path.join(base, cfg.get('data', 'test_data'))
+  test_annot = os.path.join(base, cfg.get('data', 'test_annot'))  
+
+  # load pre-trained model
+  model = load_model(cfg.get('data', 'model_file'))
+  interm_layer_model = Model(
+    inputs=model.input,
+    outputs=model.get_layer('HL').output)   
+
+  # load training data first
+  train_data_provider = DatasetProvider(
+    train_data,
+    train_annot,
+    disease,
+    judgement,
+    use_pickled_alphabet=True,
+    alphabet_pickle=cfg.get('data', 'alphabet_pickle'),    
+    min_token_freq=cfg.getint('args', 'min_token_freq'))
+  x_train, y_train = train_data_provider.load()
+
+  classes = len(set(y_train))
+  print ('unique labels in train:', classes)
+  maxlen = cfg.getint('data', 'maxlen')
+  x_train = pad_sequences(x_train, maxlen=maxlen)
+
+  # make training vectors for target task
+  print ('original x_train shape:', x_train.shape)
+  x_train = interm_layer_model.predict(x_train)
+  print ('new x_train shape:', x_train.shape)
+
+  # now load the test set
+  test_data_provider = DatasetProvider(
+    test_data,
+    test_annot,
+    disease,
+    judgement,
+    use_pickled_alphabet=True,
+    alphabet_pickle=cfg.get('data', 'alphabet_pickle'),    
+    min_token_freq=cfg.getint('args', 'min_token_freq'))
+  x_test, y_test = test_data_provider.load()
+  x_test = pad_sequences(x_test, maxlen=maxlen)
+
+  # make test vectors for target task
+  print ('original x_test shape:', x_test.shape)
+  x_test = interm_layer_model.predict(x_test)
+  print ('new x_test shape:', x_test.shape)
+  
+  #SVM classifier
+  classifier = LinearSVC(class_weight='balanced')
+  model = classifier.fit(x_train, y_train)
+  predictions = classifier.predict(x_test)
+  p = precision_score(y_test, predictions, average='macro')
+  r = recall_score(y_test, predictions, average='macro')
+  f1 = f1_score(y_test, predictions, average='macro')
+  print ('p = %.3f' % p)
+  print ('r = %.3f' % r)
+  print ('f1 = %.3f\n' % f1)
+  
+  print ('%.3f & %.3f & %.3f\n' % (p, r, f1))
+
+  return p, r, f1
+
+def run_evaluation_all_diseases():
+  """Evaluate classifier performance for all 16 comorbidities"""
+
+  exclude = set()
+
+  cfg = configparser.ConfigParser()
+  base = os.path.dirname(sys.path[0])
+  base_conf = sys.path[0]
+
+  #If no config file passed, use sparce.cfg by default
+  if len(sys.argv) > 1:
+    cfg_file = str(os.path.join(base_conf, sys.argv[1]))
+  else:
+    cfg_file = os.path.dirname(sys.path[0]) + '/Comorbidity/sparse.cfg'
+  cfg.read(cfg_file)
+  
+  judgement = cfg.get('data', 'judgement')
+  #judgement = 'intuitive'
+  evaluation = cfg.get('data', 'evaluation')
+  #evaluation = 'sparse'
+  test_annot = os.path.join(base, cfg.get('data', 'test_annot'))
+  
+  disease_names = []  
+  ps = []
+  rs = []
+  f1s = []
+  for disease in i2b2.get_disease_names(test_annot, exclude):
+    if evaluation == 'sparse':
+      # use bag-of-word vectors
+      p, r, f1 = run_evaluation_sparse(disease, judgement)
+    elif evaluation == 'svd':
+      # use low dimensional vectors obtained via svd
+      print('inside the svd part of if')
+      p, r, f1 = run_evaluation_svd(disease, judgement)
+    else:
+      #use learned patient vectors
+      print('inside the dense part of if')
+      p, r, f1 = run_evaluation_dense(disease, judgement)
+      
+    disease_names.append(disease)
+    ps.append(p)
+    rs.append(r)
+    f1s.append(f1)
+
+  data = [disease_names, ps, rs,f1s]
+  df = pd.DataFrame(data)  
+  print(df)
+# with open('/content/drive/MyDrive/DLH_Final_Project/test1/Comorbidity/Model/dataframe.txt', 'a') as f:
+#     dfAsString = df.to_string(header=False, index=False)
+#     f.write(dfAsString)
+  if evaluation == 'sparse':
+    df.to_csv('/content/drive/MyDrive/DLH_Final_Project/test1/Comorbidity/Model/dataframe_sparse.txt',sep=' ', index=False, header=False, mode='w')
+  elif evaluation == 'svd':
+    df.to_csv('/content/drive/MyDrive/DLH_Final_Project/test1/Comorbidity/Model/dataframe_svd.txt',sep=' ', index=False, header=False, mode='w')
+  else:
+    df.to_csv('/content/drive/MyDrive/DLH_Final_Project/test1/Comorbidity/Model/dataframe_dense.txt',sep=' ', index=False, header=False, mode='w')
+
+  print ('average p =', numpy.mean(ps))
+  print ('average r =', numpy.mean(rs))
+  print ('average f1 =', numpy.mean(f1s))
+
+  
+
+if __name__ == "__main__":
+  #Time counter to calculate compute time
+  start_time = time.time()
+  
+  #Run evaluations
+  run_evaluation_all_diseases()
+  
+  #Print compute time
+  print("--- %s seconds ---" % (time.time() - start_time))
