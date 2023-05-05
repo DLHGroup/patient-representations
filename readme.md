@@ -1,4 +1,5 @@
-### Paper Reproducibility for Dligach and Miller, 2018 *SEM paper *Learning Patient Representations from Text*
+### Paper Reproducibility Project for CS598 DL4H in Spring 2023
+## Dligach and Miller, 2018 *SEM paper *Learning Patient Representations from Text*
 
 Please refer to the **Code_Execution_Guide_(Bonus Notenook).ipynb** for detailed stepwise instructions on how to run the code.
 
