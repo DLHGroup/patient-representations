@@ -36,9 +36,9 @@ python ft.py cuis.cfg
 ##### Evaluation
 Evaluate the learned mode against the different baseline models. Each evaluation can be run seprately using below commands.
 
-python svm.py sparse.cfg
-python svm.py svd.cfg
-python svm.py dense.cfg
+- python svm.py sparse.cfg
+- python svm.py svd.cfg
+- python svm.py dense.cfg
 
 ##### Models & Corpus built
 
