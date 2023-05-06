@@ -3,7 +3,7 @@
 [Original Repository](dmitriydligach/starsem2018-patient-representations)
 
 #### Dependencies:
-We used the below tools and Python packages and :
+We used the below tools and Python packages:
 - Google Colab GPU environment that is equivalent to a Titan X NVIDIA GPU
 - openjdk 11.0.18
 - Apache cTAKES 4.0.0.1
