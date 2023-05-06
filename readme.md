@@ -69,4 +69,4 @@ Venous Insufficiency|0.976|0.655|0.725|0.976|0.655|0.725|0.574|0.763|0.547|
 **Average**|**0.762**|**0.621**|**0.643**|**0.755**|**0.618**|**0.640**|**0.540**|**0.565**|**0.528**|
 
 #### Descriptive Notebook
-You can also refer to the **Code_Execution_Guide_(Bonus Notenook).ipynb** for detailed stepwise instructions on how to run the code. Also, you may find some other interesting insights.
+You can also refer to the **Code_Execution_Guide_(Bonus Notenook).ipynb** for detailed stepwise instructions on how to run the code. You may find some other interesting insights too!
