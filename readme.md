@@ -42,7 +42,7 @@ Evaluate the learned mode against the different baseline models. Each evaluation
 
 #### Models & Corpus built:
 
-- **Codes**: mimic-cuis.data, alphabet.p, model.h5
+- **Codes**: mimic-cuis.data (this is an 80 MB file and has not been uploaded), alphabet.p, model.h5
 - **Comorbidity**: alphabet.p
 
 #### Table of Results:
