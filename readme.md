@@ -1,6 +1,6 @@
 #### Paper Reproducibility Project for CS598 DL4H in Spring 2023
 ### **Learning Patient Representations from Text** by Dmitriy Dligach and Timothy Miller
-[Original Repository]([dmitriydligach/starsem2018-patient-representations](https://github.com/dmitriydligach/starsem2018-patient-representations))
+[Original Repository](https://github.com/dmitriydligach/starsem2018-patient-representations)
 
 #### Dependencies:
 We used the below tools and Python packages:
