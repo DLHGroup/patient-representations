@@ -77,7 +77,7 @@ if __name__ == "__main__":
   #cfg.read(sys.argv[1])
   #base = os.environ['DATA_ROOT']
   base = os.path.dirname(sys.path[0])
-  base_conf = sys.path[0]  
+  base_conf = sys.path[0]
   if len(sys.argv) > 1:
     cfg_file = str(os.path.join(base_conf, sys.argv[1]))
   else:
@@ -141,9 +141,9 @@ if __name__ == "__main__":
   print ('number of labels:', len(dataset.code2int))
 
   model = get_model(cfg, init_vectors, len(dataset.token2int))
-  #optimizer = RMSprop(lr=cfg.getfloat('dan', 'learnrt'))
-  optimizer = Adam(learning_rate=cfg.getfloat('dan', 'learnrt'))
-  
+  optimizer = RMSprop(lr=cfg.getfloat('dan', 'learnrt'))
+  #optimizer = Adam(learning_rate=cfg.getfloat('dan', 'learnrt')) # Ablation study
+
   #############Team 45##########
   # If using torch
   #import torch
@@ -151,10 +151,10 @@ if __name__ == "__main__":
   #optimizer = torch.optim.Adam(naive_rnn.parameters(),lr=0.001)
   #nn.CrossEntropyLoss()
   #criterion = nn.BCELoss()
-  #criterion = nn.BCELoss(reduction='none') 
+  #criterion = nn.BCELoss(reduction='none')
   #################
-  
-  model.compile(loss='BinaryFocalCrossentropy',#'binary_crossentropy',
+
+  model.compile(loss='binary_crossentropy', #'BinaryFocalCrossentropy',#Ablation study
                 optimizer=optimizer,
                 metrics=['accuracy'])
   model.fit(train_x,
