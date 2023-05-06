@@ -2,7 +2,7 @@
 ### **Learning Patient Representations from Text** by Dmitriy Dligach and Timothy Miller,
 [Original Repository](dmitriydligach/starsem2018-patient-representations)
 
-##### Dependencies
+#### Dependencies
 We used the below tools and Python packages and :
 - Google Colab GPU environment that is equivalent to a Titan X NVIDIA GPU
 - openjdk 11.0.18
@@ -13,14 +13,14 @@ We used the below tools and Python packages and :
 - Keras 2.12.0
 - gensim 4.3.1
 
-##### Data download instruction
+#### Data download instruction
 Follow the instructions in this [link](https://eicu-crd.mit.edu/gettingstarted/access/) to get access to **Physionet.org** and then download following files from the [MIMIC III Clinical database](https://physionet.org/content/mimiciii/1.4/)
 - NOTEEVENTS.csv
 - PROCEDURES ICD.csv
 - DIAGNOSES ICD.csv
 - CPTEVENTS.csv
 
-##### Preprocessing
+#### Preprocessing
 * Create your [UMLS](https://uts.nlm.nih.gov/uts/signup-login?_gl=1*1tk5kri*_ga*ODQ0MDU0MjY1LjE2NDYzNjEyNDE.*_ga_7147EPK006*MTY1MTExNzYwNC4yLjEuMTY1MTExNzYwOC4w*_ga_P1FPTH9PL4*MTY1MTExNzYwNC4yLjEuMTY1MTExNzYwOC4w) account and obtain User Id and key to run cTAKES.
 * Follow the instrucions on the [Apache cTAKES](https://cwiki.apache.org/confluence/display/CTAKES/cTAKES+4.0+User+Install+Guide) site to setup the NLP software.
 
