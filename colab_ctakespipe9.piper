@@ -1,0 +1,34 @@
+//       ***  Piper File  ***
+//       Created by Jargonaut
+//       on May 04, 2023
+
+//  Files in Dir Reader
+//  Reads document texts from text files in a directory.
+// reader FileTreeReader InputDirectory=input/file/path/goes/here
+
+//  CCDA Sectionizer
+//  Annotates Document Sections by detecting Section Headers using Regular Expressions provided in a File.
+add org.apache.ctakes.core.ae.CDASegmentAnnotator
+
+
+//  Sentence Detector
+//  Annotates Sentences based upon an OpenNLP model.
+add org.apache.ctakes.core.ae.SentenceDetector
+
+
+//  PTB Tokenizer
+//  Annotates Document Penn TreeBank Tokens.
+add org.apache.ctakes.core.ae.TokenizerAnnotatorPTB
+
+
+//  Negation Annotator (Negex)
+//  Use negex to assign polarity to Named Entities.
+add org.apache.ctakes.ytex.uima.annotators.NegexAnnotator
+
+//  Dictionary Lookup (Overlap)
+//  Annotates clinically-relevant terms.  Terms can overlap dictionary entries.
+add org.apache.ctakes.dictionary.lookup2.ae.OverlapJCasTermAnnotator
+
+//  CUI Count Writer
+//  Writes a two-column BSV file containing CUIs and their total counts in a document.
+//add org.apache.ctakes.core.cc.CuiCountFileWriter OutputDirectory=output
