@@ -4,7 +4,7 @@
 
 #### Dependencies:
 We used the below tools and Python packages:
-- Google Colab GPU environment that is equivalent to a Titan X NVIDIA GPU
+- Google Colab GPU environment using the Pro+ subscription
 - openjdk 11.0.18
 - Apache cTAKES 4.0.0.1
 - Python 3.10.11
