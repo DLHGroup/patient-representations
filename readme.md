@@ -34,7 +34,11 @@ For the evaluation data download the i2b2 Obesity Challenge datasets currenty ho
 
 Once the cTAKES software is installed run the pipeline using below command.
 
-apache-ctakes-4.0.0.1/bin/runClinicalPipeline.sh -i "Input Path" --xmiOut "Output Path" --user <user_id> --key <key>
+Default pipeline
+!bash apache-ctakes-4.0.0.1/bin/runClinicalPipeline.sh -i "Input Path" --xmiOut "Output Path" --user username --key userkey
+
+piper file run
+!bash apache-ctakes-4.0.0.1/bin/runPiperFile.sh  -p apache-ctakes-4.0.0.1/colab_ctakespipe5.piper --user username --key userkey
 
 #### Training:
 Train and build the model using below command
