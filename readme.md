@@ -20,7 +20,7 @@ Follow the instructions in this [link](https://eicu-crd.mit.edu/gettingstarted/a
 - DIAGNOSES ICD.csv
 - CPTEVENTS.csv
 
-For the evaluation data Download the i2b2 Obesity Challenge datasets currenty housed [here]("https://portal.dbmi.hms.harvard.edu/"). You will need the following files.
+For the evaluation data download the i2b2 Obesity Challenge datasets currenty housed [here]("https://portal.dbmi.hms.harvard.edu/"). You will need the following files.
 - obesity_patient_records_training.xml
 - obesity_patient_records_training2.xml
 - obesity_patient_records_test.xml
