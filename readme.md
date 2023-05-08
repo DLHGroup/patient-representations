@@ -28,7 +28,7 @@ For the evaluation data download the i2b2 Obesity Challenge datasets currenty ho
 - obesity_standoff_annotations_training2.xml
 - obesity_standoff_annotations_test.xml
 
-#### Preprocessing: (Mote stepwise detailed instructions also available in the bonus notebook)
+#### Preprocessing: (Stepwise detailed instructions also available in the bonus notebook)
 * Create your [UMLS](https://uts.nlm.nih.gov/uts/signup-login?_gl=1*1tk5kri*_ga*ODQ0MDU0MjY1LjE2NDYzNjEyNDE.*_ga_7147EPK006*MTY1MTExNzYwNC4yLjEuMTY1MTExNzYwOC4w*_ga_P1FPTH9PL4*MTY1MTExNzYwNC4yLjEuMTY1MTExNzYwOC4w) account and obtain User Id and key to run cTAKES.
 * Follow the instrucions on the [Apache cTAKES](https://cwiki.apache.org/confluence/display/CTAKES/cTAKES+4.0+User+Install+Guide) site to setup the NLP software.
 
